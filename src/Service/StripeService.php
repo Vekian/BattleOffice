@@ -19,7 +19,7 @@ class StripeService {
         Stripe::setApiKey('sk_test_51NuFINFuMIbivSImr6RUMV5yDQ5K0U4QJDezXxYHMCCqNCR1HVUEMRpquIUWpUEODdlNXkvMgMVgeOr4v1MDNtzg00vghaisyq');
 
         $product = $order->getProduct();
-        if ($product->getPriceFree() == null){
+        if ($product->getPriceFree() !== null){
           $price = strval(intval($product->getPriceFree() * 100));
         }
         else {

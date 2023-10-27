@@ -8,8 +8,10 @@ use App\Entity\Client;
 use App\Form\OrderType;
 use Psr\Log\LoggerInterface;
 use App\Repository\ProductRepository;
+use App\Repository\OrderRepository;
 use App\Service\CommerceService;
 use App\Service\StripeService;
+use App\Service\PaypalService;
 use App\Service\MailService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,11 +24,13 @@ class LandingPageController extends AbstractController
     private $commerceService;
     private $stripeService;
     private $mailService;
-    public function __construct(CommerceService $commerceService, StripeService $stripeService, MailService $mailService)
+    private $paypalService;
+    public function __construct(CommerceService $commerceService, StripeService $stripeService, MailService $mailService, PaypalService $paypalService)
     {
         $this->commerceService = $commerceService;
         $this->stripeService = $stripeService;
         $this->mailService = $mailService;
+        $this->paypalService = $paypalService;
     }
 
     #[Route('/', name: 'landing_page')]
@@ -74,8 +78,22 @@ class LandingPageController extends AbstractController
     }
 
     #[Route('/confirmation', name: 'confirmation')]
-    public function confirmation(): Response
+    public function confirmation(Request $request, OrderRepository $orderRepository, EntityManagerInterface $entityManager): Response
     {
+        if (isset($_GET['orderId'])){
+            $orderId = $_GET['orderId'];
+            $orderDataId = $_GET['orderDataId'];
+            $order = $orderRepository->find($orderDataId);
+            $order->setStatus('PAID');
+            $entityManager->flush();
+            $product = $order->getProduct();
+            $email = $order->getClient()->getEmail();
+            $name = $order->getAddressShipping()->getFirstname();
+            $this->commerceService->updateOrder($orderId);
+            $this->mailService->sendEmail($email, $name, $product);
+        }
+        
+
         return $this->render('landing_page/confirmation.html.twig');
     }
 
@@ -83,7 +101,13 @@ class LandingPageController extends AbstractController
     public function show(Order $order): Response
     {
         $response = $this->commerceService->saveOrder($order);
-        $session = $this->stripeService->startPayment($response['order_id'], $order);
-        return $this->redirect($session->url);
+        if ($order->getPaymentMethod() === "stripe"){
+            $session = $this->stripeService->startPayment($response['order_id'], $order);
+            return $this->redirect($session->url);
+        }
+        else if ( $order->getPaymentMethod() === "paypal"){
+            $sessionUrl = $this->paypalService->startPayment($response['order_id'], $order);
+            return $this->redirect($sessionUrl);
+        }
     }
 }
