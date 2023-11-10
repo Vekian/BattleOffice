@@ -17,8 +17,8 @@ class PaypalService {
     }
 
     public function getPaypalClient(){
-        $clientId="AVN5mVrD22pw2HMC2nqzMJ22iUOim4cR-tE6D_bqFH2lLa4jK6_XBZMe9OxJkeXvLK85tLcCJPV_Mkqm";
-        $clientSecret="EE5lRIXAtKM6WDwGsa0Z3_pzpC8txIwtyuRSigqX_ogmMlSofHZ6YTp1Say-8X4VWgBNyakuH6Pqsmf0";
+        $clientId= $this->parameterBag->get('PAYPAL_CLIENT_ID');
+        $clientSecret= $this->parameterBag->get('PAYPAL_CLIENT_SECRET');
         $environnement = new SandboxEnvironment($clientId, $clientSecret);
         return new PayPalHttpClient($environnement);
     }

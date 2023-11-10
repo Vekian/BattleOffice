@@ -16,7 +16,7 @@ class StripeService {
     }
 
     public function startPayment($orderId, $order){
-        Stripe::setApiKey('sk_test_51NuFINFuMIbivSImr6RUMV5yDQ5K0U4QJDezXxYHMCCqNCR1HVUEMRpquIUWpUEODdlNXkvMgMVgeOr4v1MDNtzg00vghaisyq');
+        Stripe::setApiKey($this->parameterBag->get('STRIPE_API_KEY'));
 
         $product = $order->getProduct();
         if ($product->getPriceFree() !== null){
